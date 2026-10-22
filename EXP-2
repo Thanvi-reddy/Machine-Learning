@@ -1,0 +1,81 @@
+
+import csv
+
+data = [
+    ["Sky", "AirTemp", "Humidity", "Wind", "Water", "Forecast", "EnjoySport"],
+    ["Sunny", "Warm", "Normal", "Strong", "Warm", "Same", "Yes"],
+    ["Sunny", "Warm", "High", "Strong", "Warm", "Same", "Yes"],
+    ["Rainy", "Cold", "High", "Strong", "Warm", "Change", "No"],
+    ["Sunny", "Warm", "High", "Strong", "Cool", "Change", "Yes"]
+]
+
+with open("training_data.csv", "w", newline="") as file:
+    writer = csv.writer(file)
+    writer.writerows(data)
+
+with open("training_data.csv", "r") as file:
+    reader = csv.reader(file)
+    dataset = list(reader)
+
+examples = dataset[1:]
+num_attributes = len(dataset[0]) - 1
+
+S = ["Ø"] * num_attributes
+G = [["?"] * num_attributes]
+
+for example in examples:
+    x = example[:-1]
+    target = example[-1]
+
+    if target == "Yes":
+        G = [
+            g for g in G
+            if all(a == "?" or a == b for a, b in zip(g, x))
+        ]
+
+        for i in range(num_attributes):
+            if S[i] == "Ø":
+                S[i] = x[i]
+            elif S[i] != x[i]:
+                S[i] = "?"
+
+    else:
+        new_G = []
+
+        for g in G:
+            if all(a == "?" or a == b for a, b in zip(g, x)):
+                for i in range(num_attributes):
+                    if g[i] == "?":
+                        values = set(
+                            e[i] for e in examples
+                            if e[-1] == "Yes"
+                        )
+
+                        for value in values:
+                            if value != x[i]:
+                                h = g.copy()
+                                h[i] = value
+
+                                if all(
+                                    s == "Ø" or s == "?"
+                                    or h[j] == "?" or h[j] == s
+                                    for j, s in enumerate(S)
+                                ):
+                                    new_G.append(h)
+            else:
+                new_G.append(g)
+
+        G = [list(h) for h in {
+            tuple(h) for h in new_G
+        }]
+
+print("Training Data:")
+for row in dataset:
+    print(row)
+
+print("\nSpecific Boundary (S):")
+print(S)
+
+print("\nGeneral Boundary (G):")
+for h in G:
+    print(h)
